@@ -74,6 +74,7 @@ import { isWriteable } from './is-writeable'
 import * as Log from './output/log'
 import createSpinner from './spinner'
 import { trace, flushAllTraces, setGlobal } from '../telemetry/trace'
+import { JPTracer } from '../telemetry/studying'
 import {
   collectPages,
   detectConflictingPaths,
@@ -120,6 +121,15 @@ export default async function build(
   runLint = true
 ): Promise<void> {
   const nextBuildSpan = trace('next-build')
+  const jpTracer = new JPTracer('nex-build')
+
+  jpTracer.record('build arguments', {
+    dir,
+    conf,
+    reactProductionProfiling,
+    debugOutput,
+    runLint,
+  })
 
   const buildResult = await nextBuildSpan.traceAsyncFn(async () => {
     // attempt to load global env values so they are available in next.config.js
@@ -1743,6 +1753,8 @@ export default async function build(
 
   // Ensure all traces are flushed before finishing the command
   await flushAllTraces()
+
+  jpTracer.showLogs()
 
   return buildResult
 }
